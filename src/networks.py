@@ -4,6 +4,8 @@ from torch.autograd import Variable
 import functools
 from torch.optim import lr_scheduler
 import torch.nn.functional as F
+import numpy as np
+
 
 ####################################################################
 #------------------------- Discriminators --------------------------
@@ -455,6 +457,28 @@ def gaussian_weights_init(m):
   classname = m.__class__.__name__
   if classname.find('Conv') != -1 and classname.find('Conv') == 0:
     m.weight.data.normal_(0.0, 0.02)
+
+def gmm_weights_init(m): # Gaussian Mixture Model initialization
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1 and classname.find('Conv') == 0:
+        gmm_components = [
+            {'mean': 0.0, 'std': 0.01, 'weight': 0.5},  #50% of the weights
+            {'mean': 0.1, 'std': 0.02, 'weight': 0.3},  #30% of the weights
+            {'mean': -0.1, 'std': 0.03, 'weight': 0.2},  #20% of the weights
+        ]
+        weights = np.array([comp['weight'] for comp in gmm_components])
+        weights /= weights.sum() 
+        total_params = m.weight.data.numel() 
+        new_weights = torch.zeros(total_params)
+        for i in range(total_params):
+            chosen_component = np.random.choice(len(gmm_components), p=weights)
+            mean = gmm_components[chosen_component]['mean']
+            std = gmm_components[chosen_component]['std']
+            new_weights[i] = torch.normal(mean, std)
+
+        m.weight.data = new_weights.view_as(m.weight.data) 
+
+
 
 ####################################################################
 #-------------------------- Basic Blocks --------------------------

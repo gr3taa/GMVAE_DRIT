@@ -60,8 +60,10 @@ class DRIT(nn.Module):
     self.disB2.apply(networks.gaussian_weights_init)
     self.disContent.apply(networks.gaussian_weights_init)
     self.gen.apply(networks.gaussian_weights_init)
-    self.enc_c.apply(networks.gaussian_weights_init)
-    self.enc_a.apply(networks.gaussian_weights_init)
+    #self.enc_c.apply(networks.gaussian_weights_init)
+    #self.enc_a.apply(networks.gaussian_weights_init)
+    self.enc_c.apply(networks.gmm_weights_init)
+    self.enc_a.apply(networks.gmm_weights_init)
 
   def set_scheduler(self, opts, last_ep=0):
     self.disA_sch = networks.get_scheduler(self.disA_opt, opts, last_ep)
