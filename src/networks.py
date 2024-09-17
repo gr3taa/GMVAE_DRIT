@@ -90,7 +90,7 @@ class Dis(nn.Module):
     return outs_A
 
 ####################################################################
-#---------------------------- Encoders -----------------------------
+#---------------------------- Encoders ----------------------------- non cambierei questa parte di codice
 ####################################################################
 class E_content(nn.Module):
   def __init__(self, input_dim_a, input_dim_b):
@@ -613,13 +613,13 @@ class MisINSResBlock(nn.Module):
     out += residual
     return out
 
-class GaussianNoiseLayer(nn.Module):
+class GaussianNoiseLayer(nn.Module): #  aggiunge rumore gaussiano all'input solo durante la fase di addestramento
   def __init__(self,):
     super(GaussianNoiseLayer, self).__init__()
   def forward(self, x):
     if self.training == False:
       return x
-    noise = Variable(torch.randn(x.size()).cuda(x.get_device()))
+    noise = Variable(torch.randn(x.size()).cuda(x.get_device())) # torch.randn genera un tensore di numeri casuali provenienti da una distribuzione normale (gaussiana) con media 0 e varianza 1, avente la stessa dimensione di x
     return x + noise
 
 class ReLUINSConvTranspose2d(nn.Module):
