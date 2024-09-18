@@ -260,6 +260,7 @@ class G(nn.Module):
   def __init__(self, output_dim_a, output_dim_b, nz):
     super(G, self).__init__()
     self.nz = nz
+    self.generative_net=GenerativeNet(output_dim_a,nz, output_dim_b)
     ini_tch = 256
     tch_add = ini_tch
     tch = ini_tch
@@ -306,7 +307,11 @@ class G(nn.Module):
         nn.Linear(256, tch_add*4))
     return
 
-  def forward_a(self, x, z):
+  def forward_a(self, x, y):
+    y=y.view(y.size(0),-1)
+    y_mu, y_var=self.generative_net.pzy(y)
+    z=torch.normal(y_mu,torch.sqrt(y_var))
+    
     z = self.mlpA(z)
     z1, z2, z3, z4 = torch.split(z, self.tch_add, dim=1)
     z1, z2, z3, z4 = z1.contiguous(), z2.contiguous(), z3.contiguous(), z4.contiguous()
@@ -317,7 +322,10 @@ class G(nn.Module):
     out = self.decA5(out4)
     return out
 
-  def forward_b(self, x, z):
+  def forward_b(self, x, y):
+    y=y.view(y.size(0),-1)
+    y_mu, y_var=self.generative_net.pzy(y)
+    z=torch.normal(y_mu,torch.sqrt(y_var))
     z = self.mlpB(z)
     z1, z2, z3, z4 = torch.split(z, self.tch_add, dim=1)
     z1, z2, z3, z4 = z1.contiguous(), z2.contiguous(), z3.contiguous(), z4.contiguous()
@@ -332,6 +340,7 @@ class G_concat(nn.Module):
   def __init__(self, output_dim_a, output_dim_b, nz):
     super(G_concat, self).__init__()
     self.nz = nz
+    self.generative_net=GenerativeNet(output_dim_a,nz, output_dim_b)
     tch = 256
     dec_share = []
     dec_share += [INSResBlock(tch, tch)]
@@ -370,7 +379,11 @@ class G_concat(nn.Module):
     self.decB3 = nn.Sequential(*[decB3])
     self.decB4 = nn.Sequential(*decB4)
 
-  def forward_a(self, x, z):
+  def forward_a(self, x, y):
+    y=y.view(y.size(0),-1)
+    y_mu, y_var=self.generative_net.pzy(y)
+    z=torch.normal(y_mu,torch.sqrt(y_var))
+    
     out0 = self.dec_share(x)
     z_img = z.view(z.size(0), z.size(1), 1, 1).expand(z.size(0), z.size(1), x.size(2), x.size(3))
     x_and_z = torch.cat([out0, z_img], 1)
@@ -386,7 +399,11 @@ class G_concat(nn.Module):
     out4 = self.decA4(x_and_z4)
     return out4
 
-  def forward_b(self, x, z):
+  def forward_b(self, x, y):
+    y=y.view(y.size(0),-1)
+    y_mu, y_var=self.generative_net.pzy(y)
+    z=torch.normal(y_mu,torch.sqrt(y_var))
+    
     out0 = self.dec_share(x)
     z_img = z.view(z.size(0), z.size(1), 1, 1).expand(z.size(0), z.size(1), x.size(2), x.size(3))
     x_and_z = torch.cat([out0,  z_img], 1)
@@ -402,6 +419,45 @@ class G_concat(nn.Module):
     out4 = self.decB4(x_and_z4)
     return out4
 
+class GenerativeNet(nn.Module):
+  def __init__(self, x_dim, z_dim, y_dim):
+    super(GenerativeNet, self).__init__()
+
+    # p(z|y)
+    self.y_mu = nn.Linear(y_dim, z_dim)
+    self.y_var = nn.Linear(y_dim, z_dim)
+
+    # p(x|z)
+    self.generative_pxz = torch.nn.ModuleList([
+        nn.Linear(z_dim, 512),
+        nn.ReLU(),
+        nn.Linear(512, 512),
+        nn.ReLU(),
+        nn.Linear(512, x_dim),
+        torch.nn.Sigmoid()
+    ])
+
+  # p(z|y)
+  def pzy(self, y):
+    y_mu = self.y_mu(y)
+    y_var = F.softplus(self.y_var(y))
+    return y_mu, y_var
+
+  # p(x|z)
+  def pxz(self, z):
+    for layer in self.generative_pxz:
+      z = layer(z)
+    return z
+
+  def forward(self, z, y):
+    # p(z|y)
+    y_mu, y_var = self.pzy(y)
+
+    # p(x|z)
+    x_rec = self.pxz(z)
+
+    output = {'y_mean': y_mu, 'y_var': y_var, 'x_rec': x_rec}
+    return output
 ####################################################################
 #------------------------- Basic Functions -------------------------
 ####################################################################
