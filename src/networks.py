@@ -308,11 +308,13 @@ class G(nn.Module):
     return
 
   def forward_a(self, x, y):
-    y=y.view(y.size(0),-1)
-    y_mu, y_var=self.generative_net.pzy(y)
-    z=torch.normal(y_mu,torch.sqrt(y_var))
     
-    z = self.mlpA(z)
+    # GMVAE generate a latent vector that will be used for the image generation
+    y=y.view(y.size(0),-1)
+    y_mu, y_var=self.generative_net.pzy(y) 
+    z=torch.normal(y_mu,torch.sqrt(y_var)) # latent vector z sampling. This is the new latent vector
+    
+    z = self.mlpA(z) # mlp for adapting the dimension of z to the dimension of the decoder's layers
     z1, z2, z3, z4 = torch.split(z, self.tch_add, dim=1)
     z1, z2, z3, z4 = z1.contiguous(), z2.contiguous(), z3.contiguous(), z4.contiguous()
     out1 = self.decA1(x, z1)
