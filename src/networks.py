@@ -90,7 +90,7 @@ class Dis(nn.Module):
     return outs_A
 
 ####################################################################
-#---------------------------- Encoders ----------------------------- non cambierei questa parte di codice
+#---------------------------- Encoders ----------------------------- 
 ####################################################################
 class E_content(nn.Module):
   def __init__(self, input_dim_a, input_dim_b):
@@ -252,6 +252,7 @@ class E_attr_concat(nn.Module):
     output_B = self.fc_B(conv_flat_B)
     outputVar_B = self.fcVar_B(conv_flat_B)
     return output_B, outputVar_B
+  
 
 ####################################################################
 #--------------------------- Generators ----------------------------
